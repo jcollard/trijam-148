@@ -21,7 +21,7 @@ public class EnemyController : MonoBehaviour
         List<EnemyController> newList = new List<EnemyController>(EnemyController.Enemies);
         foreach(EnemyController enemy in newList)
         {
-            if (enemy == null) continue;
+            // if (enemy == null) continue;
             enemy.BlowUp();
         }
     }
@@ -85,7 +85,7 @@ public class EnemyController : MonoBehaviour
     public void BlowUp()
     {
         EnemyController.Enemies.Remove(this);
-        if (this.gameObject != null)
+        if (this != null)
         {
             GameController.Instance.kills++;
             EnemySpawnerController.Instance.EnemyExplosion.Play();

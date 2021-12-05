@@ -42,6 +42,8 @@ public class EnemySpawnerController : MonoBehaviour
             newEnemy.InitFlightPlan();
             LastSpawn = Time.time;
         }
-        SpawnRate = Mathf.Max(0.5F, (StartSpawnRate - (0.1F * GameController.Instance.kills)));
+
+        float modifier = Mathf.Log10(1F + ((float)GameController.Instance.kills/((float)(StartSpawnRate)*10)))*((float)StartSpawnRate);
+        SpawnRate = Mathf.Max(0.25F, (StartSpawnRate - modifier));
     }
 }

@@ -109,6 +109,7 @@ public class GameController : MonoBehaviour
     {
         if (!Music.isPlaying)
             Music.Play();
+        EnemyController.DestroyAllEnemies();
         Player.Restart();
         Overlay.gameObject.SetActive(true);
         GameOverScreen.gameObject.SetActive(false);
