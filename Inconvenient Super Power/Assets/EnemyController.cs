@@ -89,7 +89,13 @@ public class EnemyController : MonoBehaviour
         {
             GameController.Instance.kills++;
             EnemySpawnerController.Instance.EnemyExplosion.Play();
+            ExplosionController explosion = UnityEngine.Object.Instantiate<ExplosionController>(GameController.Instance.ExplosionTemplate);
+            explosion.transform.position = this.transform.position;
+            explosion.gameObject.SetActive(true);
             UnityEngine.Object.Destroy(this.gameObject);
+            
+
+
         }
     }
 

@@ -6,30 +6,41 @@ public class GameController : MonoBehaviour
 {
 
     public static GameController Instance;
+
+    public ExplosionController ExplosionTemplate;
     public int kills = 0;
 
+    public AudioSource Music;
     public AudioSource PlayerExplosion;
     public AudioSource BombExplosion;
     public AudioSource PowerUp1;
     public AudioSource PowerUp2;
     public AudioSource PowerUp3;
 
+    public int TimeBonus;
+    public float StartAt;
+
     public float PowerChangeTime = 5;
     public float LastChange;
     public int LastPower = 0;
 
     public float CurrentTime;
+    public Canvas Overlay;
     public Canvas GameOverScreen;
+    public Canvas TitleScreen;
     public PlayerController Player;
 
-    public UnityEngine.UI.Text PowerTimer;
+    public RectTransform PowerTimer;
     public UnityEngine.UI.Text CurrentPower;
     public UnityEngine.UI.Text ShipsDestroyed;
 
     // Start is called before the first frame update
     void Start()
     {
+        StartAt = Time.time;
         GameOverScreen.gameObject.SetActive(false);
+        Overlay.gameObject.SetActive(false);
+        TitleScreen.gameObject.SetActive(true);
         if (GameController.Instance != null)
         {
             throw new System.Exception("GameController should be a singleton object but more than one were found.");
@@ -40,15 +51,24 @@ public class GameController : MonoBehaviour
 
     public void Update()
     {
-        if ((LastChange + PowerChangeTime) < Time.time)
+        if ((LastChange + PowerChangeTime) < Time.time && Player.lives > 0)
         {
             ChangePower();
             LastChange = Time.time;
         }
+        if (Player.lives > 0)
+        {
+            TimeBonus = (int)(Time.time - StartAt);
+        }
         CurrentTime = Time.time;
         int TimeLeft = (int)(PowerChangeTime + (LastChange - Time.time));
-        PowerTimer.text = $"Power Reset: {TimeLeft}s";
-        ShipsDestroyed.text = $"Ships Destroyed: {kills}s";
+        
+        ShipsDestroyed.text = $"{kills*100 + TimeBonus*10}".PadLeft(8, '0');
+        // Debug.Log($"Min: {PowerTimer.offsetMin}, Max: {PowerTimer.offsetMax}.");
+        float percent = ((LastChange + PowerChangeTime) - Time.time)/PowerChangeTime;
+        PowerTimer.sizeDelta = new Vector2(percent * 300, 28);
+        // PowerTimer.offsetMin = new Vector2(0, -6);
+        // PowerTimer.offsetMax = new Vector2(200, 28);
     }
 
     public void ChangePower()
@@ -64,7 +84,7 @@ public class GameController : MonoBehaviour
             Player.canBomb = false;
             Player.canFire = true;
             Player.DisableShield();
-            CurrentPower.text = "Power: Laser";
+            CurrentPower.text = "Laser";
             PowerUp1.Play();
         }
         else if (choice == 1)
@@ -72,7 +92,7 @@ public class GameController : MonoBehaviour
             Player.canBomb = false;
             Player.canFire = false;
             Player.SpawnShield();
-            CurrentPower.text = "Power: Shield";
+            CurrentPower.text = "Shield";
             PowerUp2.Play();
         }
         else if (choice == 2)
@@ -80,17 +100,27 @@ public class GameController : MonoBehaviour
             Player.canFire = false;
             Player.canBomb = true;
             Player.DisableShield();
-            CurrentPower.text = "Power: Bomb";
+            CurrentPower.text = "Bomb";
             PowerUp3.Play();
         }
     }
 
     public void Restart()
     {
+        if (!Music.isPlaying)
+            Music.Play();
         Player.Restart();
+        Overlay.gameObject.SetActive(true);
         GameOverScreen.gameObject.SetActive(false);
+        TitleScreen.gameObject.SetActive(false);
         kills = 0;
         LastPower = 0;
-        CurrentPower.text = "Power: Laser";
+        StartAt = Time.time;
+        TimeBonus = 0;
+        LastChange = Time.time;
+        Player.canBomb = false;
+        Player.canFire = true;
+        Player.DisableShield();
+        CurrentPower.text = "Laser";
     }
 }

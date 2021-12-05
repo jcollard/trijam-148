@@ -6,6 +6,7 @@ using System;
 public class PlayerController : MonoBehaviour
 {
 
+    public SpriteRenderer sprite;
     private Dictionary<string, Action> MovementControls;
     private Dictionary<string, Action> FireControls;
 
@@ -30,7 +31,7 @@ public class PlayerController : MonoBehaviour
     public float RespawnDelay = 3;
 
     public int startingLives = 3;
-    public int lives = 3;
+    public int lives = 0;
     // Start is called before the first frame update
     void Start()
     {
@@ -44,7 +45,9 @@ public class PlayerController : MonoBehaviour
         FireControls["Fire"] = () => Fire();
 
         StartingPosition = new Vector2(0, Min.y);
-        Restart();
+        this.transform.position = new Vector2(-500, -500);
+        RespawnAt = 0;
+        //Restart();
     }
 
     // Update is called once per frame
@@ -69,6 +72,16 @@ public class PlayerController : MonoBehaviour
                     FireControls[key]();
                 }
             }
+        }
+
+        if (Invulnerable > 0)
+        {
+            float alpha = Mathf.Abs(Mathf.Sin(Time.time*20));
+            sprite.color = new Color(sprite.color.r, sprite.color.g, sprite.color.b, alpha);
+        }
+        else 
+        {
+            sprite.color = new Color(sprite.color.r, sprite.color.g, sprite.color.b, 1);
         }
 
         DoMove();
@@ -108,6 +121,9 @@ public class PlayerController : MonoBehaviour
 
     public void BlowUp()
     {
+        ExplosionController explosion = UnityEngine.Object.Instantiate<ExplosionController>(GameController.Instance.ExplosionTemplate);
+        explosion.transform.position = this.transform.position;
+        explosion.gameObject.SetActive(true);
         GameController.Instance.PlayerExplosion.Play();
         RespawnAt = Time.time + RespawnDelay;
         this.transform.position = new Vector2(-500, 500);
@@ -146,7 +162,7 @@ public class PlayerController : MonoBehaviour
             EnemyController.DestroyAllEnemies();
             this.canBomb = false;
             GameController.Instance.BombExplosion.Play();
-            GameController.Instance.CurrentPower.text = "Power: None";
+            GameController.Instance.CurrentPower.text = "None";
         }
     }
 
