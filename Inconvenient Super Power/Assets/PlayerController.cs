@@ -7,12 +7,23 @@ public class PlayerController : MonoBehaviour
 {
 
     private Dictionary<string, Action> MovementControls;
+    private Dictionary<string, Action> FireControls;
+
+    public LaserController LaserRef;
+    public ShieldController ShieldRef;
+    public ShieldController LastShield;
+
+    public bool canFire = true;
+    public bool canBomb = false;
 
     public Vector2 Min;
     public Vector2 Max;
     public Vector2 NextMove;
 
     private Vector2 StartingPosition;
+
+    public float InvulnerabilityDuration = 3;
+    public float Invulnerable = -1;
     public float Speed = 7;
 
     public float RespawnAt = -1;
@@ -28,6 +39,10 @@ public class PlayerController : MonoBehaviour
         MovementControls["Right"] = () => CalculateMove(1, 0);
         MovementControls["Up"] = () => CalculateMove(0, 1);
         MovementControls["Down"] = () => CalculateMove(0, -1);
+
+        FireControls = new Dictionary<string, Action>();
+        FireControls["Fire"] = () => Fire();
+
         StartingPosition = new Vector2(0, Min.y);
         Restart();
     }
@@ -37,11 +52,22 @@ public class PlayerController : MonoBehaviour
     {
         NextMove = new Vector2();
 
-        foreach (string key in MovementControls.Keys)
+        if (RespawnAt < 0)
         {
-            if (Input.GetButton(key) && RespawnAt < 0)
+            foreach (string key in MovementControls.Keys)
             {
-                MovementControls[key]();
+                if (Input.GetButton(key))
+                {
+                    MovementControls[key]();
+                }
+            }
+
+            foreach (string key in FireControls.Keys)
+            {
+                if (Input.GetButtonDown(key))
+                {
+                    FireControls[key]();
+                }
             }
         }
 
@@ -73,14 +99,20 @@ public class PlayerController : MonoBehaviour
             float newY = Mathf.Clamp(position.y, Min.y, Max.y);
             this.transform.position = new Vector2(newX, newY);
         }
+        if (Invulnerable < Time.time)
+        {
+            Invulnerable = -1;
+        }
 
     }
 
     public void BlowUp()
     {
+        GameController.Instance.PlayerExplosion.Play();
         RespawnAt = Time.time + RespawnDelay;
         this.transform.position = new Vector2(-500, 500);
         lives--;
+
         if (lives <= 0)
         {
             RespawnAt = float.PositiveInfinity;
@@ -90,6 +122,7 @@ public class PlayerController : MonoBehaviour
 
     public void Respawn()
     {
+        Invulnerable = Time.time + InvulnerabilityDuration;
         this.transform.position = StartingPosition;
         RespawnAt = -1;
     }
@@ -100,11 +133,46 @@ public class PlayerController : MonoBehaviour
         Respawn();
     }
 
+    public void Fire()
+    {
+        if (this.canFire)
+        {
+            LaserController newLaser = UnityEngine.Object.Instantiate<LaserController>(LaserRef);
+            newLaser.transform.position = new Vector2(this.transform.position.x, this.transform.position.y + 0.5f);
+            newLaser.gameObject.SetActive(true);
+        }
+        if (this.canBomb)
+        {
+            EnemyController.DestroyAllEnemies();
+            this.canBomb = false;
+            GameController.Instance.BombExplosion.Play();
+            GameController.Instance.CurrentPower.text = "Power: None";
+        }
+    }
+
+    public void DisableShield()
+    {
+        if (LastShield != null)
+        {
+            UnityEngine.Object.Destroy(LastShield.gameObject);
+        }
+    }
+
+    public void SpawnShield()
+    {
+        DisableShield();
+        ShieldController newShield = UnityEngine.Object.Instantiate<ShieldController>(ShieldRef);
+        newShield.transform.parent = this.transform;
+        newShield.transform.localPosition = new Vector3();
+        newShield.gameObject.SetActive(true);
+        LastShield = newShield;
+    }
+
     private void OnTriggerEnter2D(Collider2D other)
     {
 
         EnemyController enemy = other.GetComponent<EnemyController>();
-        if (enemy != null)
+        if (enemy != null && Invulnerable < 0)
         {
             BlowUp();
         }
